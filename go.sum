@@ -1,5 +1,10 @@
-github.com/lucasew/golog v0.0.0-20190805103920-c9e25acedf6a h1:V4eJpZKQQkPw68dEIZPqrynAi2CD13yooxKo+WCM88Y=
-github.com/lucasew/golog v0.0.0-20190805103920-c9e25acedf6a/go.mod h1:45lBkIUbTYhkPiAMMYRSDsdHI2oPB0PbtW/dzQmhKj0=
-github.com/lucasew/golog v0.0.0-20250514223244-8d53aff8b0af/go.mod h1:45lBkIUbTYhkPiAMMYRSDsdHI2oPB0PbtW/dzQmhKj0=
-github.com/lucasew/golog v0.0.0-20251122021803-18b0642ab528/go.mod h1:45lBkIUbTYhkPiAMMYRSDsdHI2oPB0PbtW/dzQmhKj0=
-github.com/lucasew/golog v0.0.0-20251220230941-78b73ffc520f/go.mod h1:45lBkIUbTYhkPiAMMYRSDsdHI2oPB0PbtW/dzQmhKj0=
+github.com/cpuguy83/go-md2man/v2 v2.0.6/go.mod h1:oOW0eioCTA6cOiMLiUPZOpcVxMig6NIQQ7OS05n1F4g=
+github.com/inconshreveable/mousetrap v1.1.0 h1:wN+x4NVGpMsO7ErUn/mUI3vEoE6Jt13X2s0bqwp9tc8=
+github.com/inconshreveable/mousetrap v1.1.0/go.mod h1:vpF70FUmC8bwa3OWnCshd2FqLfsEA9PFc4w1p2J65bw=
+github.com/russross/blackfriday/v2 v2.1.0/go.mod h1:+Rmxgy9KzJVeS9/2gXHxylqXiyQDYRxCVz55jmeOWTM=
+github.com/spf13/cobra v1.10.2 h1:DMTTonx5m65Ic0GOoRY2c16WCbHxOOw6xxezuLaBpcU=
+github.com/spf13/cobra v1.10.2/go.mod h1:7C1pvHqHw5A4vrJfjNwvOdzYu0Gml16OCs2GRiTUUS4=
+github.com/spf13/pflag v1.0.9 h1:9exaQaMOCwffKiiiYk6/BndUBv+iRViNW+4lEMi0PvY=
+github.com/spf13/pflag v1.0.9/go.mod h1:McXfInJRrz4CZXVZOBLb0bTZqETkiAhM9Iw0y3An2Bg=
+go.yaml.in/yaml/v3 v3.0.4/go.mod h1:DhzuOOF2ATzADvBadXxruRBLzYTpT36CKvDb3+aBEFg=
+gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
