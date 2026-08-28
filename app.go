@@ -28,7 +28,7 @@ var _ http.Handler = (*App)(nil)
 // NewApp validates cfg and builds a server that is not yet listening.
 func NewApp(cfg Config) (*App, error) {
 	if cfg.Addr == "" {
-		cfg.Addr = ":80"
+		cfg.Addr = ":8080"
 	}
 	if cfg.Dir == "" {
 		cfg.Dir = "./"

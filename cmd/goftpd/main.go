@@ -34,7 +34,7 @@ func main() {
 		},
 	}
 	cmd.CompletionOptions.DisableDefaultCmd = true
-	cmd.Flags().StringVar(&cfg.Addr, "addr", ":80", "Onde eu vou escutar")
+	cmd.Flags().StringVar(&cfg.Addr, "addr", ":8080", "Onde eu vou escutar")
 	cmd.Flags().StringVarP(&cfg.Dir, "dir", "d", "./", "Root folder")
 
 	if err := cmd.Execute(); err != nil {
