@@ -1,5 +1,10 @@
 module github.com/lucasew/goftpd
 
-go 1.13
+go 1.27
 
-require github.com/lucasew/golog v0.0.0-20251220230941-78b73ffc520f
+require github.com/spf13/cobra v1.10.2
+
+require (
+	github.com/inconshreveable/mousetrap v1.1.0 // indirect
+	github.com/spf13/pflag v1.0.9 // indirect
+)
