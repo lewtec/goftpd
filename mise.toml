@@ -7,6 +7,10 @@ svu = "3.3.0"
 description = "Download Go module deps"
 run = "go mod download"
 
+[tasks.generate]
+description = "Run go generate (templ)"
+run = "go generate ./..."
+
 [tasks.fmt]
 description = "Format Go packages"
 run = "go fmt ./..."
@@ -24,8 +28,8 @@ description = "Build goftpd"
 run = "go build -o goftpd ./cmd/goftpd"
 
 [tasks.ci]
-description = "Format, vet, test, build"
-depends = ["install", "fmt", "lint", "test", "build"]
+description = "Generate, format, vet, test, build"
+depends = ["install", "generate", "fmt", "lint", "test", "build"]
 
 [tasks.release]
 description = "Tag and release with GoReleaser (svu + goreleaser)"

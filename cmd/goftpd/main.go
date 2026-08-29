@@ -21,7 +21,7 @@ func main() {
 	cmd := &cobra.Command{
 		Use:           "goftpd",
 		Version:       version,
-		Short:         "Servidor de arquivos HTTP simples",
+		Short:         "Simple HTTP file server",
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -38,8 +38,9 @@ func main() {
 		},
 	}
 	cmd.CompletionOptions.DisableDefaultCmd = true
-	cmd.Flags().StringVar(&cfg.Addr, "addr", ":8080", "Onde eu vou escutar")
-	cmd.Flags().StringVarP(&cfg.Dir, "dir", "d", "./", "Root folder")
+	cmd.Flags().StringVar(&cfg.Addr, "addr", ":8080", "Listen address")
+	cmd.Flags().StringVarP(&cfg.Dir, "dir", "d", "./", "Served directory")
+	cmd.Flags().BoolVar(&cfg.SPA, "spa", false, "SPA mode: never list directories")
 
 	if err := cmd.Execute(); err != nil {
 		slog.Error("goftpd", "err", err)

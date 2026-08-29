@@ -9,6 +9,7 @@ project_name: goftpd
 before:
   hooks:
     - go mod tidy
+    - go generate ./...
 
 builds:
   - id: goftpd

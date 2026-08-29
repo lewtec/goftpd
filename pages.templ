@@ -1,0 +1,68 @@
+package goftpd
+
+templ layout(title string) {
+	<!DOCTYPE html>
+	<html lang="en">
+		<head>
+			<meta charset="utf-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1"/>
+			<title>{ title }</title>
+			<link rel="stylesheet" href="/__goftpd__/sakura.css" media="screen"/>
+			<link rel="stylesheet" href="/__goftpd__/sakura-dark.css" media="screen and (prefers-color-scheme: dark)"/>
+		</head>
+		<body>
+			{ children... }
+		</body>
+	</html>
+}
+
+templ listingPage(title string, crumbs []crumb, parent string, entries []listEntry) {
+	@layout(title) {
+		<h1>{ title }</h1>
+		<nav>
+			for i, c := range crumbs {
+				if i > 0 {
+					<span> / </span>
+				}
+				if c.Href != "" {
+					<a href={ templ.SafeURL(c.Href) }>{ c.Name }</a>
+				} else {
+					<span>{ c.Name }</span>
+				}
+			}
+		</nav>
+		<table>
+			<thead>
+				<tr>
+					<th>Name</th>
+					<th>Size</th>
+					<th>Modified</th>
+				</tr>
+			</thead>
+			<tbody>
+				if parent != "" {
+					<tr>
+						<td><a href={ templ.SafeURL(parent) }>..</a></td>
+						<td></td>
+						<td></td>
+					</tr>
+				}
+				for _, e := range entries {
+					<tr>
+						<td><a href={ templ.SafeURL(e.Href) }>{ e.Name }</a></td>
+						<td>{ e.Size }</td>
+						<td>{ e.Mtime }</td>
+					</tr>
+				}
+			</tbody>
+		</table>
+	}
+}
+
+templ notFoundPage(reqPath string) {
+	@layout("Not found") {
+		<h1>Not found</h1>
+		<p>No file at <code>{ reqPath }</code>.</p>
+		<p><a href="/">Back to /</a></p>
+	}
+}

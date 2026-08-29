@@ -1,13 +1,15 @@
 package goftpd
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"log/slog"
 	"net/http"
-	"net/url"
 	"os"
+	"path/filepath"
 	"time"
 )
 
@@ -15,41 +17,52 @@ import (
 type Config struct {
 	Addr string
 	Dir  string
+	SPA  bool
 }
 
-// App serves Config.Dir over HTTP.
+// App serves an fs.FS over HTTP.
 type App struct {
-	srv *http.Server
-	dir string
+	srv  *http.Server
+	fsys fs.FS
+	spa  bool
 }
 
 var _ http.Handler = (*App)(nil)
 
 // NewApp validates cfg and builds a server that is not yet listening.
 func NewApp(cfg Config) (*App, error) {
-	if cfg.Addr == "" {
-		cfg.Addr = ":8080"
-	}
-	if cfg.Dir == "" {
-		cfg.Dir = "./"
-	}
-	if _, err := os.Stat(cfg.Dir); err != nil {
-		return nil, fmt.Errorf("pasta de trabalho %q: %w", cfg.Dir, err)
+	cfg.Addr = cmp.Or(cfg.Addr, ":8080")
+	fsys, err := dirFS(cfg.Dir)
+	if err != nil {
+		return nil, err
 	}
 
-	a := &App{dir: cfg.Dir}
+	a := &App{fsys: fsys, spa: cfg.SPA}
 	a.srv = &http.Server{
-		Addr:    cfg.Addr,
-		Handler: a,
+		Addr:              cfg.Addr,
+		Handler:           a,
+		ReadHeaderTimeout: 10 * time.Second,
+		IdleTimeout:       120 * time.Second,
 	}
 	return a, nil
+}
+
+func dirFS(dir string) (fs.FS, error) {
+	dir = cmp.Or(dir, "./")
+	abs, err := filepath.Abs(dir)
+	if err != nil {
+		return nil, fmt.Errorf("served directory %q: %w", dir, err)
+	}
+	if _, err := os.Stat(abs); err != nil {
+		return nil, fmt.Errorf("served directory %q: %w", dir, err)
+	}
+	return os.DirFS(abs), nil
 }
 
 // Run listens until ctx is canceled, then shuts the server down.
 // The ListenAndServe goroutine exits after Shutdown or a listen error.
 func (a *App) Run(ctx context.Context) error {
-	slog.InfoContext(ctx, "iniciando servidor", "dir", a.dir, "addr", a.srv.Addr)
-	slog.InfoContext(ctx, "pau na máquina")
+	slog.InfoContext(ctx, "starting server", "addr", a.srv.Addr, "spa", a.spa)
 
 	errCh := make(chan error, 1)
 	go func() {
@@ -74,20 +87,4 @@ func (a *App) Run(ctx context.Context) error {
 		}
 		return nil
 	}
-}
-
-// ServeHTTP serves a file from the configured directory.
-func (a *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	path := a.dir + r.RequestURI
-	path, err := url.QueryUnescape(path)
-	if err != nil {
-		slog.WarnContext(r.Context(), "não foi possível parsear a url", "err", err)
-	}
-	slog.InfoContext(r.Context(), "request",
-		"host", r.Host,
-		"method", r.Method,
-		"url", r.URL.String(),
-	)
-	http.ServeFile(w, r, path)
-	w.Header().Set("Cache-Control", "max-age=5")
 }
