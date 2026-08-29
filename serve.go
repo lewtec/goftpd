@@ -8,7 +8,6 @@ import (
 	"mime"
 	"net/http"
 	"net/url"
-	"os"
 	"path"
 	"strconv"
 	"strings"
@@ -43,7 +42,7 @@ func (a *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fi, err := a.root.Stat(rel)
+	fi, err := fs.Stat(a.fsys, rel)
 	if err != nil {
 		a.serveMiss(w, r)
 		return
@@ -67,7 +66,7 @@ func (a *App) serveDir(w http.ResponseWriter, r *http.Request, rel, urlPath stri
 		if rel != "." {
 			idx = path.Join(rel, "index.html")
 		}
-		if fileExists(a.root, idx) {
+		if fileExists(a.fsys, idx) {
 			a.serveDiskFile(w, r, idx, http.StatusOK)
 			return
 		}
@@ -82,11 +81,11 @@ func (a *App) serveMiss(w http.ResponseWriter, r *http.Request) {
 		a.writeNotFound(w, r)
 		return
 	}
-	if fileExists(a.root, "404.html") {
+	if fileExists(a.fsys, "404.html") {
 		a.serveDiskFile(w, r, "404.html", http.StatusNotFound)
 		return
 	}
-	if fileExists(a.root, "index.html") {
+	if fileExists(a.fsys, "index.html") {
 		a.serveDiskFile(w, r, "index.html", http.StatusOK)
 		return
 	}
@@ -94,7 +93,7 @@ func (a *App) serveMiss(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) writeListing(w http.ResponseWriter, r *http.Request, rel, urlPath string) {
-	entries, err := fs.ReadDir(a.root.FS(), rel)
+	entries, err := fs.ReadDir(a.fsys, rel)
 	if err != nil {
 		slog.WarnContext(r.Context(), "readdir", "path", rel, "err", err)
 		a.writeNotFound(w, r)
@@ -147,7 +146,7 @@ func (a *App) writeNotFound(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) serveDiskFile(w http.ResponseWriter, r *http.Request, rel string, status int) {
-	f, err := a.root.Open(rel)
+	f, err := a.fsys.Open(rel)
 	if err != nil {
 		a.writeNotFound(w, r)
 		return
@@ -158,9 +157,14 @@ func (a *App) serveDiskFile(w http.ResponseWriter, r *http.Request, rel string, 
 		a.writeNotFound(w, r)
 		return
 	}
+	rs, ok := f.(io.ReadSeeker)
+	if !ok {
+		a.writeNotFound(w, r)
+		return
+	}
 	w.Header().Set("Cache-Control", cacheControl)
 	if status == http.StatusOK {
-		http.ServeContent(w, r, fi.Name(), fi.ModTime(), f)
+		http.ServeContent(w, r, fi.Name(), fi.ModTime(), rs)
 		return
 	}
 	ctype := mime.TypeByExtension(path.Ext(rel))
@@ -172,7 +176,7 @@ func (a *App) serveDiskFile(w http.ResponseWriter, r *http.Request, rel string, 
 			return
 		}
 		ctype = http.DetectContentType(buf[:n])
-		if _, err := f.Seek(0, io.SeekStart); err != nil {
+		if _, err := rs.Seek(0, io.SeekStart); err != nil {
 			a.writeNotFound(w, r)
 			return
 		}
@@ -183,7 +187,7 @@ func (a *App) serveDiskFile(w http.ResponseWriter, r *http.Request, rel string, 
 	if r.Method == http.MethodHead {
 		return
 	}
-	if _, err := io.Copy(w, f); err != nil {
+	if _, err := io.Copy(w, rs); err != nil {
 		slog.WarnContext(r.Context(), "copy file", "path", rel, "err", err)
 	}
 }
@@ -219,8 +223,8 @@ func (a *App) serveAsset(w http.ResponseWriter, r *http.Request, urlPath string)
 	http.ServeContent(w, r, info.Name(), info.ModTime(), rs)
 }
 
-func fileExists(root *os.Root, rel string) bool {
-	fi, err := root.Stat(rel)
+func fileExists(fsys fs.FS, rel string) bool {
+	fi, err := fs.Stat(fsys, rel)
 	return err == nil && !fi.IsDir()
 }
 

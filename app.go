@@ -5,6 +5,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"io/fs"
 	"log/slog"
 	"net/http"
 	"os"
@@ -21,10 +23,11 @@ type Config struct {
 
 // App serves Config.Dir over HTTP.
 type App struct {
-	srv  *http.Server
-	dir  string
-	root *os.Root
-	spa  bool
+	srv    *http.Server
+	dir    string
+	fsys   fs.FS
+	closer io.Closer
+	spa    bool
 }
 
 var _ http.Handler = (*App)(nil)
@@ -42,7 +45,7 @@ func NewApp(cfg Config) (*App, error) {
 		return nil, fmt.Errorf("served directory %q: %w", cfg.Dir, err)
 	}
 
-	a := &App{dir: abs, root: root, spa: cfg.SPA}
+	a := &App{dir: abs, fsys: root.FS(), closer: root, spa: cfg.SPA}
 	a.srv = &http.Server{
 		Addr:              cfg.Addr,
 		Handler:           a,
@@ -54,10 +57,10 @@ func NewApp(cfg Config) (*App, error) {
 
 // Close releases the served directory handle.
 func (a *App) Close() error {
-	if a.root == nil {
+	if a.closer == nil {
 		return nil
 	}
-	return a.root.Close()
+	return a.closer.Close()
 }
 
 // Run listens until ctx is canceled, then shuts the server down.

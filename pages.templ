@@ -9,7 +9,6 @@ templ layout(title string) {
 			<title>{ title }</title>
 			<link rel="stylesheet" href="/__goftpd__/sakura.css" media="screen"/>
 			<link rel="stylesheet" href="/__goftpd__/sakura-dark.css" media="screen and (prefers-color-scheme: dark)"/>
-			<link rel="stylesheet" href="/__goftpd__/listing.css"/>
 		</head>
 		<body>
 			{ children... }
@@ -37,22 +36,22 @@ templ listingPage(title string, crumbs []crumb, parent string, entries []listEnt
 				<tr>
 					<th>Name</th>
 					<th>Size</th>
-					<th class="mtime">Modified</th>
+					<th>Modified</th>
 				</tr>
 			</thead>
 			<tbody>
 				if parent != "" {
 					<tr>
 						<td><a href={ templ.SafeURL(parent) }>..</a></td>
-						<td class="size"></td>
-						<td class="mtime"></td>
+						<td></td>
+						<td></td>
 					</tr>
 				}
 				for _, e := range entries {
 					<tr>
 						<td><a href={ templ.SafeURL(e.Href) }>{ e.Name }</a></td>
-						<td class="size">{ e.Size }</td>
-						<td class="mtime">{ e.Mtime }</td>
+						<td>{ e.Size }</td>
+						<td>{ e.Mtime }</td>
 					</tr>
 				}
 			</tbody>

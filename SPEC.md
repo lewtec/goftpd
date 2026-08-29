@@ -45,7 +45,7 @@ The query string is not part of the file path.
 
 Decode `%xx` escapes.
 Reject a path that escapes the served directory.
-Open files through `os.Root` on the served directory.
+Open files through an `fs.FS` from `os.Root.FS` on the served directory.
 
 Honor `GET` and `HEAD`.
 For other methods, return `405`.
@@ -62,7 +62,6 @@ Map URL to embed files:
 | --- | --- |
 | `/__goftpd__/sakura.css` | `assets/sakura.css` |
 | `/__goftpd__/sakura-dark.css` | `assets/sakura-dark.css` |
-| `/__goftpd__/listing.css` | `assets/listing.css` |
 
 A later change may add `/__goftpd__/icons/*` from `assets/icons/`.
 Do not add icon files in this change.
@@ -118,13 +117,9 @@ Stylesheets:
 ```html
 <link rel="stylesheet" href="/__goftpd__/sakura.css" media="screen">
 <link rel="stylesheet" href="/__goftpd__/sakura-dark.css" media="screen and (prefers-color-scheme: dark)">
-<link rel="stylesheet" href="/__goftpd__/listing.css">
 ```
 
-`listing.css` sets `body { max-width: none; }` so a table can use the
-screen width.
-Sakura 1.5.1 sets `max-width: 38em` on `body`.
-That width is for articles, not for a file table.
+Sakura styles the listing. Do not add an overlay stylesheet.
 
 `index.html` in the directory is a row.
 Do not serve it in place of the listing.
