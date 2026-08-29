@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"io/fs"
 	"log/slog"
 	"net/http"
@@ -21,13 +20,11 @@ type Config struct {
 	SPA  bool
 }
 
-// App serves Config.Dir over HTTP.
+// App serves an fs.FS over HTTP.
 type App struct {
-	srv    *http.Server
-	dir    string
-	fsys   fs.FS
-	closer io.Closer
-	spa    bool
+	srv  *http.Server
+	fsys fs.FS
+	spa  bool
 }
 
 var _ http.Handler = (*App)(nil)
@@ -35,17 +32,12 @@ var _ http.Handler = (*App)(nil)
 // NewApp validates cfg and builds a server that is not yet listening.
 func NewApp(cfg Config) (*App, error) {
 	cfg.Addr = cmp.Or(cfg.Addr, ":8080")
-	cfg.Dir = cmp.Or(cfg.Dir, "./")
-	abs, err := filepath.Abs(cfg.Dir)
+	fsys, err := dirFS(cfg.Dir)
 	if err != nil {
-		return nil, fmt.Errorf("served directory %q: %w", cfg.Dir, err)
-	}
-	root, err := os.OpenRoot(abs)
-	if err != nil {
-		return nil, fmt.Errorf("served directory %q: %w", cfg.Dir, err)
+		return nil, err
 	}
 
-	a := &App{dir: abs, fsys: root.FS(), closer: root, spa: cfg.SPA}
+	a := &App{fsys: fsys, spa: cfg.SPA}
 	a.srv = &http.Server{
 		Addr:              cfg.Addr,
 		Handler:           a,
@@ -55,19 +47,22 @@ func NewApp(cfg Config) (*App, error) {
 	return a, nil
 }
 
-// Close releases the served directory handle.
-func (a *App) Close() error {
-	if a.closer == nil {
-		return nil
+func dirFS(dir string) (fs.FS, error) {
+	dir = cmp.Or(dir, "./")
+	abs, err := filepath.Abs(dir)
+	if err != nil {
+		return nil, fmt.Errorf("served directory %q: %w", dir, err)
 	}
-	return a.closer.Close()
+	if _, err := os.Stat(abs); err != nil {
+		return nil, fmt.Errorf("served directory %q: %w", dir, err)
+	}
+	return os.DirFS(abs), nil
 }
 
 // Run listens until ctx is canceled, then shuts the server down.
 // The ListenAndServe goroutine exits after Shutdown or a listen error.
 func (a *App) Run(ctx context.Context) error {
-	defer a.Close()
-	slog.InfoContext(ctx, "starting server", "dir", a.dir, "addr", a.srv.Addr, "spa", a.spa)
+	slog.InfoContext(ctx, "starting server", "addr", a.srv.Addr, "spa", a.spa)
 
 	errCh := make(chan error, 1)
 	go func() {

@@ -45,7 +45,7 @@ The query string is not part of the file path.
 
 Decode `%xx` escapes.
 Reject a path that escapes the served directory.
-Open files through an `fs.FS` from `os.Root.FS` on the served directory.
+Open files through an `fs.FS` for the served directory.
 
 Honor `GET` and `HEAD`.
 For other methods, return `405`.

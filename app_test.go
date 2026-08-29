@@ -18,11 +18,6 @@ func newTestApp(t *testing.T, cfg Config) *App {
 	if err != nil {
 		t.Fatalf("NewApp: %v", err)
 	}
-	t.Cleanup(func() {
-		if err := app.Close(); err != nil {
-			t.Errorf("Close: %v", err)
-		}
-	})
 	return app
 }
 
