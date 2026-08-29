@@ -12,11 +12,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// Set via goreleaser ldflags: -X main.version={{ .Version }}
+var version = "dev"
+
 func main() {
 	var cfg goftpd.Config
 
 	cmd := &cobra.Command{
 		Use:           "goftpd",
+		Version:       version,
 		Short:         "Servidor de arquivos HTTP simples",
 		SilenceUsage:  true,
 		SilenceErrors: true,
