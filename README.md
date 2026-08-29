@@ -17,4 +17,4 @@ mise release          # next (svu) + goreleaser (precisa GITHUB_TOKEN)
 mise release patch    # ou major | minor | next
 ```
 
-CI: [`.github/workflows/autorelease.yml`](.github/workflows/autorelease.yml). Push/PR roda `mise run ci`. `workflow_dispatch` com patch/minor/major tagueia e publica.
+CI: [`.github/workflows/autorelease.yml`](.github/workflows/autorelease.yml). Push/PR roda `mise run ci`. GitHub Releases só via **Actions → Autorelease → Run workflow** (`workflow_dispatch`).

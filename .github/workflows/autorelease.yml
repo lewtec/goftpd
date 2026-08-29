@@ -4,8 +4,8 @@ on:
   push:
     branches:
       - master
-    tags:
-      - '*'
+    # Do not trigger on tags: release pushes a tag, which would re-enter this
+    # workflow and mint another version.
   pull_request:
     branches:
       - master
@@ -75,7 +75,7 @@ jobs:
           fi
 
       - name: Release
-        if: github.event.inputs.new_version != '' && github.event_name != 'pull_request'
+        if: github.event_name == 'workflow_dispatch'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NEW_VERSION: ${{ github.event.inputs.new_version }}
