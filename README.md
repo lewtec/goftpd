@@ -1,20 +1,48 @@
-# Servidor ftp básico
+# goftpd
 
-Sabe aquela hora que você tá no lab de informática e precisa passar o ~~counter strike~~ trabalho para os colegas, mas a internet é tão lerda que não vale a pena e também você não quer emprestar seu pendrive por que não quer que as pessoas vejam os segredos obscuros nele? Então, acredito eu que este programinha vai te ajudar muito. 
+A small HTTP file server. One binary. Point it at a directory and share files
+on the local network.
 
-Ele basicamente cria um servidor de arquivos que pode ser acessado pelo navegador, e por ser feito em go, acredito que performance não seja problema e sobre praticidade é só compilar (`mise exec -- go build -o goftpd ./cmd/goftpd`) e levar o binário pra qualquer lugar.
+Use it when you are in a lab with a slow uplink and you do not want to hand
+out a USB stick. Compile it, copy the binary, run it.
 
-Por padrão ele expõe a pasta onde ele está, por exemplo, se eu colocar ele na home do pendrive e rodar ele, ele vai estar expondo seu pedrive inteiro.
+By default it serves the current directory. Put the binary on a USB stick and
+run it from there to share the whole stick.
 
-Pra compilar esse carinha você precisa do compilador de go, o compilador vai gerar um binário (no caso do windows, um arquivo .exe) e este arquivo está pronto para usar. Também tem binário pronto no [GitHub Releases](https://github.com/lewtec/goftpd/releases) (linux/mac/windows, amd64/arm64).
+Build:
+
+```bash
+mise exec -- go build -o goftpd ./cmd/goftpd
+```
+
+Ready-made binaries are on [GitHub Releases](https://github.com/lewtec/goftpd/releases)
+(linux/mac/windows, amd64/arm64).
+
+## Flags
+
+| Flag | Default | Meaning |
+| --- | --- | --- |
+| `--addr` | `:8080` | Listen address |
+| `--dir` / `-d` | `./` | Served directory |
+| `--spa` | off | SPA mode. Directories never list. A directory with `index.html` serves that file. A miss serves `/404.html` (404), else `/index.html` (200), else the built-in 404 page. |
+
+Without `--spa`, a directory shows a listing. A miss shows the built-in 404
+page. User `index.html` and `404.html` files are ordinary files.
+
+See [SPEC.md](SPEC.md) for the full request rules.
+
+Styles for the listing and the built-in 404 page live at `/__goftpd__/`.
 
 ## Release
 
-[GoReleaser](https://goreleaser.com) + [svu](https://github.com/caarlos0/svu). Só archives e checksums (sem Homebrew, Docker ou pacotes). Tags sem prefixo `v` ([`.svu.yml`](.svu.yml)).
+[GoReleaser](https://goreleaser.com) + [svu](https://github.com/caarlos0/svu).
+Archives and checksums only. Tags have no `v` prefix ([`.svu.yml`](.svu.yml)).
 
 ```bash
-mise release          # next (svu) + goreleaser (precisa GITHUB_TOKEN)
-mise release patch    # ou major | minor | next
+mise release          # next (svu) + goreleaser (needs GITHUB_TOKEN)
+mise release patch    # or major | minor | next
 ```
 
-CI: [`.github/workflows/autorelease.yml`](.github/workflows/autorelease.yml). Push/PR roda `mise run ci`. GitHub Releases só via **Actions → Autorelease → Run workflow** (`workflow_dispatch`).
+CI: [`.github/workflows/autorelease.yml`](.github/workflows/autorelease.yml).
+Push/PR runs `mise run ci`. GitHub Releases only via **Actions → Autorelease →
+Run workflow** (`workflow_dispatch`).

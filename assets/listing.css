@@ -1,0 +1,26 @@
+/* goftpd listing overlay. Sakura 1.5.1 caps body at 38em (article width). */
+
+body {
+  max-width: none;
+}
+
+table {
+  width: 100%;
+}
+
+th,
+td {
+  text-align: left;
+}
+
+td.size,
+td.mtime {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 684px) {
+  .mtime {
+    display: none;
+  }
+}
