@@ -91,6 +91,14 @@ func TestListingShowsDotfilesAndIndex(t *testing.T) {
 	if strings.Contains(body, "<p>app</p>") {
 		t.Fatalf("listing served index.html body")
 	}
+	if !strings.Contains(body, `<a href="/">root</a>`) {
+		t.Fatalf("root crumb is not a link to /:\n%s", body)
+	}
+	for _, want := range []string{`<th nowrap>Size</th>`, `<th nowrap>Modified</th>`, `<td nowrap>`} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("listing missing %q:\n%s", want, body)
+		}
+	}
 }
 
 func TestListingDoesNotUseSite404(t *testing.T) {
@@ -292,6 +300,50 @@ func TestRunStopsOnCancel(t *testing.T) {
 	defer cancel()
 	if err := app.Run(ctx); err != nil {
 		t.Fatalf("Run: %v", err)
+	}
+}
+
+func TestBreadcrumbs(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		path string
+		want []crumb
+	}{
+		{
+			path: "/",
+			want: []crumb{{Name: "root", Href: "/"}},
+		},
+		{
+			path: "/docs/",
+			want: []crumb{
+				{Name: "root", Href: "/"},
+				{Name: "docs", Href: "/docs/"},
+			},
+		},
+		{
+			path: "/docs/archive/2024/jan/",
+			want: []crumb{
+				{Name: "root", Href: "/"},
+				{Name: "docs", Href: "/docs/"},
+				{Name: "archive", Href: "/docs/archive/"},
+				{Name: "2024", Href: "/docs/archive/2024/"},
+				{Name: "jan", Href: "/docs/archive/2024/jan/"},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.path, func(t *testing.T) {
+			t.Parallel()
+			got := breadcrumbs(tt.path)
+			if len(got) != len(tt.want) {
+				t.Fatalf("breadcrumbs(%q) len=%d, want %d: %#v", tt.path, len(got), len(tt.want), got)
+			}
+			for i := range got {
+				if got[i] != tt.want[i] {
+					t.Fatalf("breadcrumbs(%q)[%d] = %+v, want %+v", tt.path, i, got[i], tt.want[i])
+				}
+			}
+		})
 	}
 }
 
