@@ -107,6 +107,7 @@ Format size as a decimal byte count with a unit (`B`, `KB`, `MB`, `GB`).
 Format time as `2006-01-02 15:04`.
 
 Breadcrumbs walk from `/` to the current path.
+The first crumb is labeled `root` and always links to `/`.
 Each crumb is a link.
 
 The listing is server-rendered HTML from templ.

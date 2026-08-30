@@ -24,20 +24,15 @@ type listEntry struct {
 
 func breadcrumbs(urlPath string) []crumb {
 	urlPath = strings.Trim(urlPath, "/")
-	out := []crumb{{Name: "/", Href: "/"}}
+	out := []crumb{{Name: "root", Href: "/"}}
 	if urlPath == "" {
-		out[0].Href = ""
 		return out
 	}
 	parts := strings.Split(urlPath, "/")
 	acc := ""
-	for i, p := range parts {
+	for _, p := range parts {
 		acc += "/" + p
-		c := crumb{Name: p, Href: acc + "/"}
-		if i == len(parts)-1 {
-			c.Href = ""
-		}
-		out = append(out, c)
+		out = append(out, crumb{Name: p, Href: acc + "/"})
 	}
 	return out
 }

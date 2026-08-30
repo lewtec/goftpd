@@ -22,36 +22,31 @@ templ listingPage(title string, crumbs []crumb, parent string, entries []listEnt
 		<nav>
 			for i, c := range crumbs {
 				if i > 0 {
-					<span> / </span>
-				}
-				if c.Href != "" {
-					<a href={ templ.SafeURL(c.Href) }>{ c.Name }</a>
-				} else {
-					<span>{ c.Name }</span>
-				}
+					{ " / " }
+				}<a href={ templ.SafeURL(c.Href) }>{ c.Name }</a>
 			}
 		</nav>
 		<table>
 			<thead>
 				<tr>
 					<th>Name</th>
-					<th>Size</th>
-					<th>Modified</th>
+					<th nowrap>Size</th>
+					<th nowrap>Modified</th>
 				</tr>
 			</thead>
 			<tbody>
 				if parent != "" {
 					<tr>
 						<td><a href={ templ.SafeURL(parent) }>..</a></td>
-						<td></td>
-						<td></td>
+						<td nowrap></td>
+						<td nowrap></td>
 					</tr>
 				}
 				for _, e := range entries {
 					<tr>
 						<td><a href={ templ.SafeURL(e.Href) }>{ e.Name }</a></td>
-						<td>{ e.Size }</td>
-						<td>{ e.Mtime }</td>
+						<td nowrap>{ e.Size }</td>
+						<td nowrap>{ e.Mtime }</td>
 					</tr>
 				}
 			</tbody>
