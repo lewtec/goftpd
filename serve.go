@@ -30,7 +30,7 @@ func (a *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		loc, lang := a.localizer(r)
 		w.Header().Set("Allow", "GET, HEAD")
 		w.Header().Set("Content-Language", lang)
-		http.Error(w, localize(loc, msgMethodNA, nil), http.StatusMethodNotAllowed)
+		http.Error(w, localize(loc, "MethodNotAllowed", nil), http.StatusMethodNotAllowed)
 		return
 	}
 
@@ -126,11 +126,11 @@ func (a *App) writeListing(w http.ResponseWriter, r *http.Request, rel, urlPath 
 		rows = append(rows, row)
 	}
 	loc, lang := a.localizer(r)
-	title := localize(loc, msgListingTitle, map[string]any{"Path": urlPath})
+	title := localize(loc, "ListingTitle", map[string]any{"Path": urlPath})
 	labels := listingLabels{
-		Name:     localize(loc, msgColName, nil),
-		Size:     localize(loc, msgColSize, nil),
-		Modified: localize(loc, msgColModified, nil),
+		Name:     localize(loc, "ListingColName", nil),
+		Size:     localize(loc, "ListingColSize", nil),
+		Modified: localize(loc, "ListingColModified", nil),
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Content-Language", lang)
@@ -139,7 +139,7 @@ func (a *App) writeListing(w http.ResponseWriter, r *http.Request, rel, urlPath 
 		w.WriteHeader(http.StatusOK)
 		return
 	}
-	page := listingPage(title, lang, labels, breadcrumbs(urlPath, localize(loc, msgCrumbRoot, nil)), parentURL(urlPath), rows)
+	page := listingPage(title, lang, labels, breadcrumbs(urlPath, localize(loc, "CrumbRoot", nil)), parentURL(urlPath), rows)
 	if err := page.Render(r.Context(), w); err != nil {
 		slog.WarnContext(r.Context(), "render listing", "err", err)
 	}
@@ -156,10 +156,10 @@ func (a *App) writeNotFound(w http.ResponseWriter, r *http.Request) {
 	}
 	page := notFoundPage(
 		lang,
-		localize(loc, msgNotFoundTitle, nil),
-		localize(loc, msgNotFoundLead, nil),
+		localize(loc, "NotFoundTitle", nil),
+		localize(loc, "NotFoundLead", nil),
 		r.URL.Path,
-		localize(loc, msgNotFoundBack, nil),
+		localize(loc, "NotFoundBack", nil),
 	)
 	if err := page.Render(r.Context(), w); err != nil {
 		slog.WarnContext(r.Context(), "render not found", "err", err)

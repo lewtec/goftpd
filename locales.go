@@ -14,22 +14,6 @@ import (
 //go:embed locales/active.*.toml
 var localeFS embed.FS
 
-var (
-	msgListingTitle  = &i18n.Message{ID: "ListingTitle", Other: "Index of {{.Path}}"}
-	msgColName       = &i18n.Message{ID: "ListingColName", Other: "Name"}
-	msgColSize       = &i18n.Message{ID: "ListingColSize", Other: "Size"}
-	msgColModified   = &i18n.Message{ID: "ListingColModified", Other: "Modified"}
-	msgCrumbRoot     = &i18n.Message{ID: "CrumbRoot", Other: "root"}
-	msgNotFoundTitle = &i18n.Message{ID: "NotFoundTitle", Other: "Not found"}
-	msgNotFoundLead  = &i18n.Message{ID: "NotFoundLead", Other: "No file at"}
-	msgNotFoundBack  = &i18n.Message{ID: "NotFoundBack", Other: "Back to /"}
-	msgMethodNA      = &i18n.Message{ID: "MethodNotAllowed", Other: "method not allowed"}
-	msgCLIShort      = &i18n.Message{ID: "CLIShort", Other: "Simple HTTP file server"}
-	msgFlagAddr      = &i18n.Message{ID: "FlagAddr", Other: "Listen address"}
-	msgFlagDir       = &i18n.Message{ID: "FlagDir", Other: "Served directory"}
-	msgFlagSPA       = &i18n.Message{ID: "FlagSPA", Other: "SPA mode: never list directories"}
-)
-
 var bundle = sync.OnceValue(func() *i18n.Bundle {
 	b, err := loadBundle()
 	if err != nil {
@@ -58,16 +42,16 @@ func Localizer(langs ...string) *i18n.Localizer {
 	return i18n.NewLocalizer(bundle(), langs...)
 }
 
-func localize(loc *i18n.Localizer, msg *i18n.Message, data map[string]any) string {
-	s, err := loc.Localize(&i18n.LocalizeConfig{DefaultMessage: msg, TemplateData: data})
+func localize(loc *i18n.Localizer, id string, data map[string]any) string {
+	s, err := loc.Localize(&i18n.LocalizeConfig{MessageID: id, TemplateData: data})
 	if err != nil {
-		return msg.Other
+		return id
 	}
 	return s
 }
 
 func localizeTag(loc *i18n.Localizer) string {
-	_, tag, err := loc.LocalizeWithTag(&i18n.LocalizeConfig{DefaultMessage: msgColName})
+	_, tag, err := loc.LocalizeWithTag(&i18n.LocalizeConfig{MessageID: "ListingColName"})
 	if err != nil || tag == language.Und {
 		return "en"
 	}
@@ -88,9 +72,9 @@ type CLICopy struct {
 func NewCLICopy() CLICopy {
 	loc := Localizer()
 	return CLICopy{
-		Short: localize(loc, msgCLIShort, nil),
-		Addr:  localize(loc, msgFlagAddr, nil),
-		Dir:   localize(loc, msgFlagDir, nil),
-		SPA:   localize(loc, msgFlagSPA, nil),
+		Short: localize(loc, "CLIShort", nil),
+		Addr:  localize(loc, "FlagAddr", nil),
+		Dir:   localize(loc, "FlagDir", nil),
+		SPA:   localize(loc, "FlagSPA", nil),
 	}
 }
