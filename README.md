@@ -31,6 +31,10 @@ page. User `index.html` and `404.html` files are ordinary files.
 
 See [SPEC.md](SPEC.md) for the full request rules.
 
+The listing and the built-in 404 page follow the browser `Accept-Language`
+header. English and Portuguese ship in the binary. Missing or unknown
+tags fall back to English.
+
 Styles for the listing and the built-in 404 page live at `/__goftpd__/`.
 
 ## Release

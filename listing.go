@@ -22,9 +22,9 @@ type listEntry struct {
 	Mtime string
 }
 
-func breadcrumbs(urlPath string) []crumb {
+func breadcrumbs(urlPath, rootName string) []crumb {
 	urlPath = strings.Trim(urlPath, "/")
-	out := []crumb{{Name: "root", Href: "/"}}
+	out := []crumb{{Name: rootName, Href: "/"}}
 	if urlPath == "" {
 		return out
 	}

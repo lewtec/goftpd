@@ -11,6 +11,8 @@ import (
 	"path"
 	"strconv"
 	"strings"
+
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 const (
@@ -25,8 +27,10 @@ func (a *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		"url", r.URL.String(),
 	)
 	if r.Method != http.MethodGet && r.Method != http.MethodHead {
+		loc, lang := a.localizer(r)
 		w.Header().Set("Allow", "GET, HEAD")
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		w.Header().Set("Content-Language", lang)
+		http.Error(w, localize(loc, msgMethodNA, nil), http.StatusMethodNotAllowed)
 		return
 	}
 
@@ -121,28 +125,50 @@ func (a *App) writeListing(w http.ResponseWriter, r *http.Request, rel, urlPath 
 		}
 		rows = append(rows, row)
 	}
-	title := "Index of " + urlPath
+	loc, lang := a.localizer(r)
+	title := localize(loc, msgListingTitle, map[string]any{"Path": urlPath})
+	labels := listingLabels{
+		Name:     localize(loc, msgColName, nil),
+		Size:     localize(loc, msgColSize, nil),
+		Modified: localize(loc, msgColModified, nil),
+	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("Content-Language", lang)
 	w.Header().Set("Cache-Control", cacheControl)
 	if r.Method == http.MethodHead {
 		w.WriteHeader(http.StatusOK)
 		return
 	}
-	if err := listingPage(title, breadcrumbs(urlPath), parentURL(urlPath), rows).Render(r.Context(), w); err != nil {
+	page := listingPage(title, lang, labels, breadcrumbs(urlPath, localize(loc, msgCrumbRoot, nil)), parentURL(urlPath), rows)
+	if err := page.Render(r.Context(), w); err != nil {
 		slog.WarnContext(r.Context(), "render listing", "err", err)
 	}
 }
 
 func (a *App) writeNotFound(w http.ResponseWriter, r *http.Request) {
+	loc, lang := a.localizer(r)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("Content-Language", lang)
 	w.Header().Set("Cache-Control", cacheControl)
 	w.WriteHeader(http.StatusNotFound)
 	if r.Method == http.MethodHead {
 		return
 	}
-	if err := notFoundPage(r.URL.Path).Render(r.Context(), w); err != nil {
+	page := notFoundPage(
+		lang,
+		localize(loc, msgNotFoundTitle, nil),
+		localize(loc, msgNotFoundLead, nil),
+		r.URL.Path,
+		localize(loc, msgNotFoundBack, nil),
+	)
+	if err := page.Render(r.Context(), w); err != nil {
 		slog.WarnContext(r.Context(), "render not found", "err", err)
 	}
+}
+
+func (a *App) localizer(r *http.Request) (*i18n.Localizer, string) {
+	loc := Localizer(r.Header.Get("Accept-Language"))
+	return loc, localizeTag(loc)
 }
 
 func (a *App) serveDiskFile(w http.ResponseWriter, r *http.Request, rel string, status int) {

@@ -17,11 +17,12 @@ var version = "dev"
 
 func main() {
 	var cfg goftpd.Config
+	help := goftpd.NewCLICopy()
 
 	cmd := &cobra.Command{
 		Use:           "goftpd",
 		Version:       version,
-		Short:         "Simple HTTP file server",
+		Short:         help.Short,
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -38,9 +39,9 @@ func main() {
 		},
 	}
 	cmd.CompletionOptions.DisableDefaultCmd = true
-	cmd.Flags().StringVar(&cfg.Addr, "addr", ":8080", "Listen address")
-	cmd.Flags().StringVarP(&cfg.Dir, "dir", "d", "./", "Served directory")
-	cmd.Flags().BoolVar(&cfg.SPA, "spa", false, "SPA mode: never list directories")
+	cmd.Flags().StringVar(&cfg.Addr, "addr", ":8080", help.Addr)
+	cmd.Flags().StringVarP(&cfg.Dir, "dir", "d", "./", help.Dir)
+	cmd.Flags().BoolVar(&cfg.SPA, "spa", false, help.SPA)
 
 	if err := cmd.Execute(); err != nil {
 		slog.Error("goftpd", "err", err)
