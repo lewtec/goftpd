@@ -23,8 +23,16 @@ func newTestApp(t *testing.T, cfg Config) *App {
 
 func doReq(t *testing.T, app *App, method, target string) *httptest.ResponseRecorder {
 	t.Helper()
+	return doReqLang(t, app, method, target, "")
+}
+
+func doReqLang(t *testing.T, app *App, method, target, accept string) *httptest.ResponseRecorder {
+	t.Helper()
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(method, target, nil)
+	if accept != "" {
+		req.Header.Set("Accept-Language", accept)
+	}
 	app.ServeHTTP(rec, req)
 	return rec
 }
@@ -334,7 +342,7 @@ func TestBreadcrumbs(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.path, func(t *testing.T) {
 			t.Parallel()
-			got := breadcrumbs(tt.path)
+			got := breadcrumbs(tt.path, "root")
 			if len(got) != len(tt.want) {
 				t.Fatalf("breadcrumbs(%q) len=%d, want %d: %#v", tt.path, len(got), len(tt.want), got)
 			}
@@ -344,6 +352,60 @@ func TestBreadcrumbs(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestListingPortuguese(t *testing.T) {
+	app := newTestApp(t, Config{Dir: t.TempDir()})
+	rec := doReqLang(t, app, http.MethodGet, "/", "pt")
+	if rec.Code != http.StatusOK {
+		t.Fatalf("code got %d, want %d", rec.Code, http.StatusOK)
+	}
+	body := rec.Body.String()
+	for _, want := range []string{`lang="pt"`, "Índice de /", "raiz", "Nome", "Tamanho", "Modificado"} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("pt listing missing %q:\n%s", want, body)
+		}
+	}
+	if got := rec.Header().Get("Content-Language"); got != "pt" {
+		t.Fatalf("Content-Language got %q, want pt", got)
+	}
+}
+
+func TestNotFoundPortuguese(t *testing.T) {
+	app := newTestApp(t, Config{Dir: t.TempDir()})
+	rec := doReqLang(t, app, http.MethodGet, "/missing", "pt-BR,pt;q=0.9")
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("code got %d, want %d", rec.Code, http.StatusNotFound)
+	}
+	body := rec.Body.String()
+	for _, want := range []string{"Não encontrado", "Nenhum arquivo em", "Voltar para /"} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("pt 404 missing %q:\n%s", want, body)
+		}
+	}
+}
+
+func TestLangQueryIgnored(t *testing.T) {
+	app := newTestApp(t, Config{Dir: t.TempDir()})
+	rec := doReqLang(t, app, http.MethodGet, "/?lang=pt", "en")
+	if rec.Code != http.StatusOK {
+		t.Fatalf("code got %d, want %d", rec.Code, http.StatusOK)
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, "Index of /") || strings.Contains(body, "Índice") {
+		t.Fatalf("query lang must not override Accept-Language:\n%s", body)
+	}
+}
+
+func TestMethodNotAllowedPortuguese(t *testing.T) {
+	app := newTestApp(t, Config{Dir: t.TempDir()})
+	rec := doReqLang(t, app, http.MethodPost, "/", "pt")
+	if rec.Code != http.StatusMethodNotAllowed {
+		t.Fatalf("code got %d, want %d", rec.Code, http.StatusMethodNotAllowed)
+	}
+	if !strings.Contains(rec.Body.String(), "método não permitido") {
+		t.Fatalf("pt 405 body: %q", rec.Body.String())
 	}
 }
 

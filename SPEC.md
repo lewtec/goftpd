@@ -34,9 +34,6 @@ Use only the approved term for each idea.
 | `--dir` | `./` | Served directory |
 | `--spa` | off | SPA mode |
 
-All user-facing strings are English.
-Do not add go-i18n in this change.
-
 ## Request path
 
 Use `r.URL.Path`.
@@ -107,7 +104,7 @@ Format size as a decimal byte count with a unit (`B`, `KB`, `MB`, `GB`).
 Format time as `2006-01-02 15:04`.
 
 Breadcrumbs walk from `/` to the current path.
-The first crumb is labeled `root` and always links to `/`.
+The first crumb is the `CrumbRoot` message and always links to `/`.
 Each crumb is a link.
 
 The listing is server-rendered HTML from templ.
@@ -154,9 +151,9 @@ Do not use `http.ServeContent` for that response.
 
 ## Built-in 404 page
 
-English title `Not found`.
+Title is the `NotFoundTitle` message.
 Show the requested path.
-Link to `/`.
+Link to `/` with the `NotFoundBack` message.
 Use the same stylesheets as the listing.
 Load no JavaScript.
 
@@ -192,9 +189,19 @@ Add `github.com/a-h/templ/cmd/templ` as a Go tool in `go.mod`.
 
 ## Language
 
-Rewrite Portuguese CLI text, log lines, errors, and README to English
-in this change.
-Keep go-i18n for a later change.
+Built-in pages and the 405 body use go-i18n.
+Pick the language from the request `Accept-Language` header.
+The query string is not used for language.
+Do not add a `--lang` flag.
+If the header is missing or matches no catalog, use English.
+
+Message files live in `locales/active.*.toml` and are embedded.
+This change ships English (`en`) and Portuguese (`pt`).
+CLI help stays English.
+Size units and timestamps stay as specified in this file.
+Log lines stay English.
+
+Add `github.com/nicksnyder/go-i18n/v2/goi18n` as a Go tool.
 
 ## Out of scope
 
@@ -204,4 +211,3 @@ Keep go-i18n for a later change.
 - Walk-up to a nested `index.html` on a miss
 - Icon files
 - Theme toggle JavaScript
-- Accept-Language

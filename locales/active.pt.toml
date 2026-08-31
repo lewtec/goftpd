@@ -1,0 +1,38 @@
+[ListingTitle]
+other = "Índice de {{.Path}}"
+
+[ListingColName]
+other = "Nome"
+
+[ListingColSize]
+other = "Tamanho"
+
+[ListingColModified]
+other = "Modificado"
+
+[CrumbRoot]
+other = "raiz"
+
+[NotFoundTitle]
+other = "Não encontrado"
+
+[NotFoundLead]
+other = "Nenhum arquivo em"
+
+[NotFoundBack]
+other = "Voltar para /"
+
+[MethodNotAllowed]
+other = "método não permitido"
+
+[CLIShort]
+other = "Servidor HTTP de arquivos"
+
+[FlagAddr]
+other = "Endereço de escuta"
+
+[FlagDir]
+other = "Diretório servido"
+
+[FlagSPA]
+other = "Modo SPA: nunca listar diretórios"

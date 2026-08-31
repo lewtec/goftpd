@@ -1,8 +1,14 @@
 package goftpd
 
-templ layout(title string) {
+type listingLabels struct {
+	Name     string
+	Size     string
+	Modified string
+}
+
+templ layout(title, lang string) {
 	<!DOCTYPE html>
-	<html lang="en">
+	<html lang={ lang }>
 		<head>
 			<meta charset="utf-8"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1"/>
@@ -16,8 +22,8 @@ templ layout(title string) {
 	</html>
 }
 
-templ listingPage(title string, crumbs []crumb, parent string, entries []listEntry) {
-	@layout(title) {
+templ listingPage(title, lang string, labels listingLabels, crumbs []crumb, parent string, entries []listEntry) {
+	@layout(title, lang) {
 		<h1>{ title }</h1>
 		<nav>
 			for i, c := range crumbs {
@@ -29,9 +35,9 @@ templ listingPage(title string, crumbs []crumb, parent string, entries []listEnt
 		<table>
 			<thead>
 				<tr>
-					<th>Name</th>
-					<th nowrap>Size</th>
-					<th nowrap>Modified</th>
+					<th>{ labels.Name }</th>
+					<th nowrap>{ labels.Size }</th>
+					<th nowrap>{ labels.Modified }</th>
 				</tr>
 			</thead>
 			<tbody>
@@ -54,10 +60,10 @@ templ listingPage(title string, crumbs []crumb, parent string, entries []listEnt
 	}
 }
 
-templ notFoundPage(reqPath string) {
-	@layout("Not found") {
-		<h1>Not found</h1>
-		<p>No file at <code>{ reqPath }</code>.</p>
-		<p><a href="/">Back to /</a></p>
+templ notFoundPage(lang, title, lead, reqPath, back string) {
+	@layout(title, lang) {
+		<h1>{ title }</h1>
+		<p>{ lead } <code>{ reqPath }</code>.</p>
+		<p><a href="/">{ back }</a></p>
 	}
 }
