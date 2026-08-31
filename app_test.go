@@ -409,6 +409,14 @@ func TestMethodNotAllowedPortuguese(t *testing.T) {
 	}
 }
 
+func TestLocalizeMissingID(t *testing.T) {
+	t.Parallel()
+	got := localize(Localizer("en"), "DoesNotExist", nil)
+	if got != "DoesNotExist" {
+		t.Fatalf("missing id got %q, want the id back", got)
+	}
+}
+
 func TestFormatSize(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
