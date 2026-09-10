@@ -199,7 +199,7 @@ Message files live in `locales/active.*.toml` and are embedded.
 The TOML files are the source of the strings.
 Go looks up a message by ID. Do not keep a second English copy in Go.
 This change ships English (`en`) and Portuguese (`pt`).
-CLI help is English on the command spec. It is not localized.
+CLI help stays English.
 Size units and timestamps stay as specified in this file.
 Log lines stay English.
 

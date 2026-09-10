@@ -12,9 +12,13 @@ import (
 )
 
 type flags struct {
-	Addr cmd.StringArg `long:"addr" help:"Listen address"`
-	Dir  cmd.StringArg `short:"d" long:"dir" help:"Served directory"`
+	Addr cmd.StringArg `long:"addr" help:"Listen address" default:":8080"`
+	Dir  cmd.StringArg `short:"d" long:"dir" help:"Served directory" default:"./"`
 	SPA  cmd.Flag      `long:"spa" help:"SPA mode: never list directories"`
+}
+
+func (flags) Description() string {
+	return goftpd.NewCLICopy().Short
 }
 
 func (f flags) Run(ctx context.Context) error {
