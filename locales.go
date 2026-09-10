@@ -61,3 +61,20 @@ func localizeTag(loc *i18n.Localizer) string {
 	}
 	return base.String()
 }
+
+// CLICopy is command help text. HTTP language comes from Accept-Language,
+// so the command line stays on the default catalog (English).
+type CLICopy struct {
+	Short, Addr, Dir, SPA string
+}
+
+// NewCLICopy localizes CLI strings in English.
+func NewCLICopy() CLICopy {
+	loc := Localizer()
+	return CLICopy{
+		Short: localize(loc, "CLIShort", nil),
+		Addr:  localize(loc, "FlagAddr", nil),
+		Dir:   localize(loc, "FlagDir", nil),
+		SPA:   localize(loc, "FlagSPA", nil),
+	}
+}

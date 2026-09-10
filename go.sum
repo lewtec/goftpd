@@ -16,8 +16,8 @@ github.com/fsnotify/fsnotify v1.7.0 h1:8JEhPFa5W2WU7YfeZzPNqzMP6Lwt7L2715Ggo0nos
 github.com/fsnotify/fsnotify v1.7.0/go.mod h1:40Bi/Hjc2AVfZrqy+aj+yEI+/bRxZnMJyTJwOpGvigM=
 github.com/google/go-cmp v0.6.0 h1:ofyhxvXcZhMsU5ulbFiLKl/XBFqE1GSq7atu8tAmTRI=
 github.com/google/go-cmp v0.6.0/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeNGIjoY=
-github.com/lewtec/lewkit v0.0.0-20260910013007-48dd615c43ee h1:a7/xhyWUHY4gAPfWJrw0lAJglCtIRF3c/g9vPu0km9w=
-github.com/lewtec/lewkit v0.0.0-20260910013007-48dd615c43ee/go.mod h1:mny3fzlaJDWHT87VftUA85sY2ZBoucuhfm7kMPsOmXs=
+github.com/lewtec/lewkit v0.0.0-20260910175706-181ec3baf2ba h1:EjdaKEvIfRjUD05ZWZKroDxgSBjqHdU3L60ljDLSZ3E=
+github.com/lewtec/lewkit v0.0.0-20260910175706-181ec3baf2ba/go.mod h1:mny3fzlaJDWHT87VftUA85sY2ZBoucuhfm7kMPsOmXs=
 github.com/mattn/go-colorable v0.1.13 h1:fFA4WZxdEF4tXPZVKMLwD8oUnCTTo08duU7wxecdEvA=
 github.com/mattn/go-colorable v0.1.13/go.mod h1:7S9/ev0klgBDR4GtXTXX8a3vIGJpMovkB8vQcUbaXHg=
 github.com/mattn/go-isatty v0.0.16/go.mod h1:kYGgaQfpe5nmfYZH+SKPsOc2e4SrIfOl2e/yFXSvRLM=

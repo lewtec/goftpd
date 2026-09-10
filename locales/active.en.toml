@@ -24,3 +24,15 @@ other = "Back to /"
 
 [MethodNotAllowed]
 other = "method not allowed"
+
+[CLIShort]
+other = "Simple HTTP file server"
+
+[FlagAddr]
+other = "Listen address"
+
+[FlagDir]
+other = "Served directory"
+
+[FlagSPA]
+other = "SPA mode: never list directories"
