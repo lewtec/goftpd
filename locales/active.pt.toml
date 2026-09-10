@@ -24,15 +24,3 @@ other = "Voltar para /"
 
 [MethodNotAllowed]
 other = "método não permitido"
-
-[CLIShort]
-other = "Servidor HTTP de arquivos"
-
-[FlagAddr]
-other = "Endereço de escuta"
-
-[FlagDir]
-other = "Diretório servido"
-
-[FlagSPA]
-other = "Modo SPA: nunca listar diretórios"
