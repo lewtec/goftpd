@@ -25,7 +25,7 @@ Use only the approved term for each idea.
 | `/404.html` at the served directory | site 404 | custom 404, error page |
 | Templ HTML from goftpd | built-in page | internal template, our 404 |
 | `a-h/templ` generated Go | generated file | compiled template |
-| SHA-256 of the file bytes, quoted | strong ETag | weak ETag, mtime token |
+| quoted Unix-nanosecond modification time | strong ETag | weak ETag, content hash |
 | `Range` byte slice | byte range | partial download |
 
 ## Flags
@@ -70,6 +70,9 @@ Do not list the embed file system.
 
 Serve an embed file with the same rules as a real file:
 `http.ServeContent`, a strong ETag, `Cache-Control: no-cache`, and byte ranges.
+An embed file has no modification time. Its strong ETag is the server
+binary's modification time, read once at process start. The running
+process keeps that tag until restart.
 
 A directory named `__goftpd__` in the served directory is not reachable.
 
@@ -89,13 +92,11 @@ Set these headers before `ServeContent`:
 
 - `Cache-Control: no-cache`. Do not set `max-age`. A client may store the
   bytes. It must revalidate. There is no freshness lifetime.
-- `ETag`: a strong ETag. The opaque tag is the SHA-256 of the file bytes,
-  lowercase hex, inside quotes (`"<64 hex>"`).
-  The tag changes when the bytes change.
-  The same bytes keep the same tag after a restart.
-  goftpd may reuse a tag without reading the file again while the file
-  stamp stays the same. The stamp is size, modification time, and on Unix
-  the inode and device. When the stamp changes, hash the bytes again.
+- `ETag`: a strong ETag for this URL. The opaque tag is the file's
+  modification time as Unix nanoseconds, inside quotes (`"<ns>"`).
+  Do not read the file to build it. Do not hash the bytes.
+  A new modification time misses. The same modification time matches,
+  even when the bytes changed.
 
 `ServeContent` then:
 
@@ -108,9 +109,8 @@ Set these headers before `ServeContent`:
   whole file with 200.
 - Answers 412 when `If-Match` does not match.
 
-`ServeContent` may also set `Last-Modified` from the modification time.
-That header is not the content validator. When `If-None-Match` is present
-it decides, not `If-Modified-Since`.
+`ServeContent` also sets `Last-Modified` from that same modification time.
+When `If-None-Match` is present it decides, not `If-Modified-Since`.
 
 Do not send a weak ETag. `If-Range` ignores weak validators.
 

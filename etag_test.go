@@ -1,10 +1,6 @@
 package goftpd
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
-	"io"
-	"io/fs"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -14,7 +10,7 @@ import (
 	"time"
 )
 
-var etagRe = regexp.MustCompile(`^"[0-9a-f]{64}"$`)
+var etagRe = regexp.MustCompile(`^"-?[0-9]+"$`)
 
 func doReqHdr(t *testing.T, app *App, method, target string, hdr map[string]string) *httptest.ResponseRecorder {
 	t.Helper()
@@ -27,7 +23,7 @@ func doReqHdr(t *testing.T, app *App, method, target string, hdr map[string]stri
 	return rec
 }
 
-func TestETagFollowsBytesNotMtime(t *testing.T) {
+func TestMtimeETagUnstales(t *testing.T) {
 	dir := t.TempDir()
 	p := filepath.Join(dir, "clip.bin")
 	body := []byte("0123456789abcdef")
@@ -40,8 +36,11 @@ func TestETagFollowsBytesNotMtime(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("code got %d, want 200", rec.Code)
 	}
-	sum := sha256.Sum256(body)
-	etag := `"` + hex.EncodeToString(sum[:]) + `"`
+	fi, err := os.Stat(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	etag := mtimeETag(fi.ModTime())
 	if got := rec.Header().Get("ETag"); got != etag {
 		t.Fatalf("ETag got %q, want %q", got, etag)
 	}
@@ -49,34 +48,43 @@ func TestETagFollowsBytesNotMtime(t *testing.T) {
 		t.Fatalf("Cache-Control got %q, want no-cache", got)
 	}
 
-	future := time.Now().Add(2 * time.Hour)
-	if err := os.Chtimes(p, future, future); err != nil {
-		t.Fatal(err)
-	}
 	rec = doReqHdr(t, app, http.MethodGet, "/clip.bin", map[string]string{"If-None-Match": etag})
 	if rec.Code != http.StatusNotModified {
-		t.Fatalf("mtime-only code got %d, want 304", rec.Code)
+		t.Fatalf("same mtime code got %d, want 304", rec.Code)
 	}
 	if rec.Body.Len() != 0 {
 		t.Fatalf("304 body = %q", rec.Body.String())
 	}
-	if got := rec.Header().Get("ETag"); got != etag {
-		t.Fatalf("304 ETag got %q, want %q", got, etag)
+
+	changed := []byte("totally-different")
+	if err := os.WriteFile(p, changed, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chtimes(p, fi.ModTime(), fi.ModTime()); err != nil {
+		t.Fatal(err)
+	}
+	rec = doReqHdr(t, app, http.MethodGet, "/clip.bin", map[string]string{"If-None-Match": etag})
+	if rec.Code != http.StatusNotModified {
+		t.Fatalf("same mtime after rewrite code got %d, want 304", rec.Code)
 	}
 
-	changed := []byte("0123456789abcdeX")
-	if err := os.WriteFile(p, changed, 0o644); err != nil {
+	future := fi.ModTime().Add(2 * time.Hour)
+	if err := os.Chtimes(p, future, future); err != nil {
 		t.Fatal(err)
 	}
 	rec = doReqHdr(t, app, http.MethodGet, "/clip.bin", map[string]string{"If-None-Match": etag})
 	if rec.Code != http.StatusOK {
-		t.Fatalf("changed code got %d, want 200", rec.Code)
+		t.Fatalf("new mtime code got %d, want 200", rec.Code)
 	}
 	if got := rec.Body.String(); got != string(changed) {
 		t.Fatalf("body got %q", got)
 	}
-	if got := rec.Header().Get("ETag"); got == etag || !etagRe.MatchString(got) {
-		t.Fatalf("changed ETag got %q", got)
+	fi, err = os.Stat(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := rec.Header().Get("ETag"); got == etag || got != mtimeETag(fi.ModTime()) {
+		t.Fatalf("new ETag got %q, old %q", got, etag)
 	}
 }
 
@@ -122,7 +130,7 @@ func TestByteRangeFromMiddle(t *testing.T) {
 
 	rec = doReqHdr(t, app, http.MethodGet, "/clip.bin", map[string]string{
 		"Range":    "bytes=4-7",
-		"If-Range": `"0000000000000000000000000000000000000000000000000000000000000000"`,
+		"If-Range": `"0"`,
 	})
 	if rec.Code != http.StatusOK {
 		t.Fatalf("stale If-Range code got %d, want 200", rec.Code)
@@ -147,9 +155,7 @@ func TestByteRangeFromMiddle(t *testing.T) {
 		t.Fatalf("code got %d, want 416", rec.Code)
 	}
 
-	rec = doReqHdr(t, app, http.MethodGet, "/clip.bin", map[string]string{
-		"If-Match": `"0000000000000000000000000000000000000000000000000000000000000000"`,
-	})
+	rec = doReqHdr(t, app, http.MethodGet, "/clip.bin", map[string]string{"If-Match": `"0"`})
 	if rec.Code != http.StatusPreconditionFailed {
 		t.Fatalf("If-Match code got %d, want 412", rec.Code)
 	}
@@ -161,9 +167,9 @@ func TestAssetRevalidates(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("code got %d, want 200", rec.Code)
 	}
-	etag := rec.Header().Get("ETag")
-	if !etagRe.MatchString(etag) {
-		t.Fatalf("ETag got %q", etag)
+	etag := mtimeETag(executableModTime())
+	if got := rec.Header().Get("ETag"); got != etag {
+		t.Fatalf("ETag got %q, want %q", got, etag)
 	}
 	if got := rec.Header().Get("Cache-Control"); got != "no-cache" {
 		t.Fatalf("Cache-Control got %q, want no-cache", got)
@@ -174,6 +180,11 @@ func TestAssetRevalidates(t *testing.T) {
 	}
 	if rec.Body.Len() != 0 {
 		t.Fatalf("304 body = %q", rec.Body.String())
+	}
+
+	rec = doReq(t, app, http.MethodGet, "/__goftpd__/sakura-dark.css")
+	if got := rec.Header().Get("ETag"); got != etag {
+		t.Fatalf("dark css ETag got %q, want the binary mtime %q", got, etag)
 	}
 }
 
@@ -201,85 +212,5 @@ func TestListingKeepsShortCache(t *testing.T) {
 	}
 	if got := rec.Header().Get("ETag"); got != "" {
 		t.Fatalf("listing ETag got %q", got)
-	}
-}
-
-type stubInfo struct {
-	size int64
-	mod  time.Time
-}
-
-func (s stubInfo) Name() string       { return "f" }
-func (s stubInfo) Size() int64        { return s.size }
-func (s stubInfo) Mode() fs.FileMode  { return 0o644 }
-func (s stubInfo) ModTime() time.Time { return s.mod }
-func (s stubInfo) IsDir() bool        { return false }
-func (s stubInfo) Sys() any           { return nil }
-
-type memFile struct {
-	data  []byte
-	off   int64
-	reads int
-}
-
-func (m *memFile) Read(p []byte) (int, error) {
-	m.reads++
-	if m.off >= int64(len(m.data)) {
-		return 0, io.EOF
-	}
-	n := copy(p, m.data[m.off:])
-	m.off += int64(n)
-	return n, nil
-}
-
-func (m *memFile) Seek(off int64, whence int) (int64, error) {
-	switch whence {
-	case io.SeekStart:
-		m.off = off
-	case io.SeekCurrent:
-		m.off += off
-	case io.SeekEnd:
-		m.off = int64(len(m.data)) + off
-	default:
-		return 0, fs.ErrInvalid
-	}
-	return m.off, nil
-}
-
-func TestETagCacheSkipsReread(t *testing.T) {
-	data := []byte("same-bytes")
-	info := stubInfo{size: int64(len(data)), mod: time.Unix(10, 0)}
-	cache := newETagCache()
-	first := &memFile{data: data}
-	etag, err := cache.fileETag("file:a", info, first)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if first.reads == 0 {
-		t.Fatal("first call did not read")
-	}
-	second := &memFile{data: data}
-	got, err := cache.fileETag("file:a", info, second)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if got != etag {
-		t.Fatalf("cached etag %q, want %q", got, etag)
-	}
-	if second.reads != 0 {
-		t.Fatalf("cache hit read the file %d times", second.reads)
-	}
-
-	info.mod = info.mod.Add(time.Second)
-	third := &memFile{data: data}
-	got, err = cache.fileETag("file:a", info, third)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if got != etag {
-		t.Fatalf("same bytes etag %q, want %q", got, etag)
-	}
-	if third.reads == 0 {
-		t.Fatal("stamp change did not rehash")
 	}
 }

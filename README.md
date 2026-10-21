@@ -40,11 +40,11 @@ Styles for the listing and the built-in 404 page live at `/__goftpd__/`.
 A file response sends `Accept-Ranges: bytes`. `Range: bytes=start-end`
 reads that slice (status 206) instead of the whole file.
 
-Each file response also sends a strong `ETag`, the SHA-256 of the bytes,
-and `Cache-Control: no-cache`. There is no freshness lifetime. Send the
-tag back as `If-None-Match`. If the bytes are unchanged the answer is
-304 and the body is skipped. The tag stays the same when only the
-modification time changes.
+Each file response also sends a strong `ETag` and `Cache-Control: no-cache`.
+There is no freshness lifetime. The tag is that file's modification time.
+Send it back as `If-None-Match`. The same modification time answers 304
+and skips the body. A new modification time misses, and only that URL's
+tag changes.
 
 ## Release
 

@@ -193,15 +193,10 @@ func (a *App) serveDiskFile(w http.ResponseWriter, r *http.Request, rel string, 
 		return
 	}
 	if status == http.StatusOK {
-		etag, err := a.etags.fileETag("file:"+rel, fi, rs)
-		if err != nil {
-			slog.WarnContext(r.Context(), "etag", "path", rel, "err", err)
-			a.writeNotFound(w, r)
-			return
-		}
+		mod := validatorModTime(fi.ModTime())
 		w.Header().Set("Cache-Control", fileCacheControl)
-		w.Header().Set("ETag", etag)
-		http.ServeContent(w, r, fi.Name(), fi.ModTime(), rs)
+		w.Header().Set("ETag", mtimeETag(mod))
+		http.ServeContent(w, r, fi.Name(), mod, rs)
 		return
 	}
 	w.Header().Set("Cache-Control", pageCacheControl)
@@ -257,15 +252,10 @@ func (a *App) serveAsset(w http.ResponseWriter, r *http.Request, urlPath string)
 		a.writeNotFound(w, r)
 		return
 	}
-	etag, err := a.etags.fileETag("asset:"+name, info, rs)
-	if err != nil {
-		slog.WarnContext(r.Context(), "etag", "path", urlPath, "err", err)
-		a.writeNotFound(w, r)
-		return
-	}
+	mod := validatorModTime(info.ModTime())
 	w.Header().Set("Cache-Control", fileCacheControl)
-	w.Header().Set("ETag", etag)
-	http.ServeContent(w, r, info.Name(), info.ModTime(), rs)
+	w.Header().Set("ETag", mtimeETag(mod))
+	http.ServeContent(w, r, info.Name(), mod, rs)
 }
 
 func fileExists(fsys fs.FS, rel string) bool {
