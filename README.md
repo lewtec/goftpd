@@ -37,6 +37,15 @@ tags fall back to English.
 
 Styles for the listing and the built-in 404 page live at `/__goftpd__/`.
 
+A file response sends `Accept-Ranges: bytes`. `Range: bytes=start-end`
+reads that slice (status 206) instead of the whole file.
+
+Each file response also sends a strong `ETag` and `Cache-Control: no-cache`.
+There is no freshness lifetime. The tag is that file's modification time.
+Send it back as `If-None-Match`. The same modification time answers 304
+and skips the body. A new modification time misses, and only that URL's
+tag changes.
+
 ## Release
 
 [GoReleaser](https://goreleaser.com) + [svu](https://github.com/caarlos0/svu).

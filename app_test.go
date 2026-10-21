@@ -65,8 +65,14 @@ func TestServeHTTPFile(t *testing.T) {
 	if got := rec.Body.String(); got != "hi" {
 		t.Fatalf("body got %q, want %q", got, "hi")
 	}
-	if got := rec.Header().Get("Cache-Control"); got != "max-age=5" {
-		t.Fatalf("Cache-Control got %q, want max-age=5", got)
+	if got := rec.Header().Get("Cache-Control"); got != "no-cache" {
+		t.Fatalf("Cache-Control got %q, want no-cache", got)
+	}
+	if got := rec.Header().Get("ETag"); !etagRe.MatchString(got) {
+		t.Fatalf("ETag got %q", got)
+	}
+	if got := rec.Header().Get("Accept-Ranges"); got != "bytes" {
+		t.Fatalf("Accept-Ranges got %q", got)
 	}
 }
 

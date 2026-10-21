@@ -25,6 +25,8 @@ Use only the approved term for each idea.
 | `/404.html` at the served directory | site 404 | custom 404, error page |
 | Templ HTML from goftpd | built-in page | internal template, our 404 |
 | `a-h/templ` generated Go | generated file | compiled template |
+| quoted Unix-nanosecond modification time | strong ETag | weak ETag, content hash |
+| `Range` byte slice | byte range | partial download |
 
 ## Flags
 
@@ -66,6 +68,12 @@ Do not add icon files in this change.
 If the embed file is missing, return the built-in 404 page with status 404.
 Do not list the embed file system.
 
+Serve an embed file with the same rules as a real file:
+`http.ServeContent`, a strong ETag, `Cache-Control: no-cache`, and byte ranges.
+An embed file has no modification time. Its strong ETag is the server
+binary's modification time, read once at process start. The running
+process keeps that tag until restart.
+
 A directory named `__goftpd__` in the served directory is not reachable.
 
 ## Trailing slash
@@ -78,8 +86,33 @@ Do not redirect a file.
 ## Real file
 
 If the path names a regular file, serve that file with status 200.
-Use `http.ServeContent` so `HEAD` and range requests work.
-Set `Cache-Control: max-age=5` before you write the body.
+Use `http.ServeContent` so `HEAD` and byte ranges work.
+
+Set these headers before `ServeContent`:
+
+- `Cache-Control: no-cache`. Do not set `max-age`. A client may store the
+  bytes. It must revalidate. There is no freshness lifetime.
+- `ETag`: a strong ETag for this URL. The opaque tag is the file's
+  modification time as Unix nanoseconds, inside quotes (`"<ns>"`).
+  Do not read the file to build it. Do not hash the bytes.
+  A new modification time misses. The same modification time matches,
+  even when the bytes changed.
+
+`ServeContent` then:
+
+- Seeks to a byte range and answers 206 with `Content-Range` and
+  `Accept-Ranges: bytes`. One range is a single slice, not multipart.
+  A range that does not overlap a non-empty file is 416.
+- Answers 304 with an empty body when `If-None-Match` matches the strong
+  ETag. `HEAD` is also empty.
+- Honors `If-Range` when the strong ETag matches. Otherwise it sends the
+  whole file with 200.
+- Answers 412 when `If-Match` does not match.
+
+`ServeContent` also sets `Last-Modified` from that same modification time.
+When `If-None-Match` is present it decides, not `If-Modified-Since`.
+
+Do not send a weak ETag. `If-Range` ignores weak validators.
 
 A real file always wins over a listing, a directory index, and a miss.
 
@@ -162,6 +195,10 @@ Load no JavaScript.
 | Response | Status |
 | --- | --- |
 | Real file | 200 |
+| Real file byte range | 206 |
+| Real file, `If-None-Match` matches | 304 |
+| Real file, `If-Match` fails | 412 |
+| Real file, range outside the file | 416 |
 | Listing | 200 |
 | Directory index or site index as SPA miss | 200 |
 | Site 404 | 404 |
