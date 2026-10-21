@@ -22,9 +22,10 @@ type Config struct {
 
 // App serves an fs.FS over HTTP.
 type App struct {
-	srv  *http.Server
-	fsys fs.FS
-	spa  bool
+	srv   *http.Server
+	fsys  fs.FS
+	spa   bool
+	etags etagCache
 }
 
 var _ http.Handler = (*App)(nil)
@@ -37,7 +38,7 @@ func NewApp(cfg Config) (*App, error) {
 		return nil, err
 	}
 
-	a := &App{fsys: fsys, spa: cfg.SPA}
+	a := &App{fsys: fsys, spa: cfg.SPA, etags: newETagCache()}
 	a.srv = &http.Server{
 		Addr:              cfg.Addr,
 		Handler:           a,

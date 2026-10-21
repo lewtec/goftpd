@@ -17,7 +17,11 @@ import (
 
 const (
 	reservedPrefix = "/__goftpd__"
-	cacheControl   = "max-age=5"
+	// pageCacheControl is a short freshness lifetime for built-in HTML.
+	pageCacheControl = "max-age=5"
+	// fileCacheControl allows storage but no freshness lifetime.
+	// Clients revalidate with the strong ETag.
+	fileCacheControl = "no-cache"
 )
 
 func (a *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -134,7 +138,7 @@ func (a *App) writeListing(w http.ResponseWriter, r *http.Request, rel, urlPath 
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Content-Language", lang)
-	w.Header().Set("Cache-Control", cacheControl)
+	w.Header().Set("Cache-Control", pageCacheControl)
 	if r.Method == http.MethodHead {
 		w.WriteHeader(http.StatusOK)
 		return
@@ -149,7 +153,7 @@ func (a *App) writeNotFound(w http.ResponseWriter, r *http.Request) {
 	loc, lang := a.localizer(r)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Content-Language", lang)
-	w.Header().Set("Cache-Control", cacheControl)
+	w.Header().Set("Cache-Control", pageCacheControl)
 	w.WriteHeader(http.StatusNotFound)
 	if r.Method == http.MethodHead {
 		return
@@ -188,11 +192,19 @@ func (a *App) serveDiskFile(w http.ResponseWriter, r *http.Request, rel string, 
 		a.writeNotFound(w, r)
 		return
 	}
-	w.Header().Set("Cache-Control", cacheControl)
 	if status == http.StatusOK {
+		etag, err := a.etags.fileETag("file:"+rel, fi, rs)
+		if err != nil {
+			slog.WarnContext(r.Context(), "etag", "path", rel, "err", err)
+			a.writeNotFound(w, r)
+			return
+		}
+		w.Header().Set("Cache-Control", fileCacheControl)
+		w.Header().Set("ETag", etag)
 		http.ServeContent(w, r, fi.Name(), fi.ModTime(), rs)
 		return
 	}
+	w.Header().Set("Cache-Control", pageCacheControl)
 	ctype := mime.TypeByExtension(path.Ext(rel))
 	if ctype == "" {
 		buf := make([]byte, 512)
@@ -245,7 +257,14 @@ func (a *App) serveAsset(w http.ResponseWriter, r *http.Request, urlPath string)
 		a.writeNotFound(w, r)
 		return
 	}
-	w.Header().Set("Cache-Control", cacheControl)
+	etag, err := a.etags.fileETag("asset:"+name, info, rs)
+	if err != nil {
+		slog.WarnContext(r.Context(), "etag", "path", urlPath, "err", err)
+		a.writeNotFound(w, r)
+		return
+	}
+	w.Header().Set("Cache-Control", fileCacheControl)
+	w.Header().Set("ETag", etag)
 	http.ServeContent(w, r, info.Name(), info.ModTime(), rs)
 }
 
