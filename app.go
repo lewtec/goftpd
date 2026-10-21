@@ -11,6 +11,8 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/lewtec/lewkit/x/http/asset"
 )
 
 // Config is the knobs the command line fills in before NewApp.
@@ -21,10 +23,12 @@ type Config struct {
 }
 
 // App serves an fs.FS over HTTP.
+// Stylesheets are lewkit assets mounted in front of the file handler.
 type App struct {
-	srv  *http.Server
-	fsys fs.FS
-	spa  bool
+	srv     *http.Server
+	fsys    fs.FS
+	spa     bool
+	handler http.Handler
 }
 
 var _ http.Handler = (*App)(nil)
@@ -38,6 +42,7 @@ func NewApp(cfg Config) (*App, error) {
 	}
 
 	a := &App{fsys: fsys, spa: cfg.SPA}
+	a.handler = asset.Mount(http.HandlerFunc(a.serve))
 	a.srv = &http.Server{
 		Addr:              cfg.Addr,
 		Handler:           a,

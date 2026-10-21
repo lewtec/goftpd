@@ -35,7 +35,8 @@ The listing and the built-in 404 page follow the browser `Accept-Language`
 header. English and Portuguese ship in the binary. Missing or unknown
 tags fall back to English.
 
-Styles for the listing and the built-in 404 page live at `/__goftpd__/`.
+Styles for the listing and the built-in 404 page are the lewkit Sakura
+stylesheet at `/__lewkit__/sakura.css`.
 
 A file response sends `Accept-Ranges: bytes`. `Range: bytes=start-end`
 reads that slice (status 206) instead of the whole file.

@@ -16,7 +16,6 @@ import (
 )
 
 const (
-	reservedPrefix = "/__goftpd__"
 	// pageCacheControl is a short freshness lifetime for built-in HTML.
 	pageCacheControl = "max-age=5"
 	// fileCacheControl allows storage but no freshness lifetime.
@@ -30,6 +29,10 @@ func (a *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		"method", r.Method,
 		"url", r.URL.String(),
 	)
+	a.handler.ServeHTTP(w, r)
+}
+
+func (a *App) serve(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet && r.Method != http.MethodHead {
 		loc, lang := a.localizer(r)
 		w.Header().Set("Allow", "GET, HEAD")
@@ -39,11 +42,6 @@ func (a *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	urlPath := cleanURLPath(r.URL.Path)
-	if isReserved(urlPath) {
-		a.serveAsset(w, r, urlPath)
-		return
-	}
-
 	rel, err := relFromURL(urlPath)
 	if err != nil {
 		a.writeNotFound(w, r)
@@ -193,7 +191,7 @@ func (a *App) serveDiskFile(w http.ResponseWriter, r *http.Request, rel string, 
 		return
 	}
 	if status == http.StatusOK {
-		mod := validatorModTime(fi.ModTime())
+		mod := fi.ModTime()
 		w.Header().Set("Cache-Control", fileCacheControl)
 		w.Header().Set("ETag", mtimeETag(mod))
 		http.ServeContent(w, r, fi.Name(), mod, rs)
@@ -225,46 +223,9 @@ func (a *App) serveDiskFile(w http.ResponseWriter, r *http.Request, rel string, 
 	}
 }
 
-func (a *App) serveAsset(w http.ResponseWriter, r *http.Request, urlPath string) {
-	name, ok := strings.CutPrefix(urlPath, reservedPrefix+"/")
-	if !ok || name == "" {
-		a.writeNotFound(w, r)
-		return
-	}
-	name = path.Clean(name)
-	if name == "." || strings.HasPrefix(name, "..") {
-		a.writeNotFound(w, r)
-		return
-	}
-	f, err := assetsFS.Open("assets/" + name)
-	if err != nil {
-		a.writeNotFound(w, r)
-		return
-	}
-	defer f.Close()
-	info, err := f.Stat()
-	if err != nil || info.IsDir() {
-		a.writeNotFound(w, r)
-		return
-	}
-	rs, ok := f.(io.ReadSeeker)
-	if !ok {
-		a.writeNotFound(w, r)
-		return
-	}
-	mod := validatorModTime(info.ModTime())
-	w.Header().Set("Cache-Control", fileCacheControl)
-	w.Header().Set("ETag", mtimeETag(mod))
-	http.ServeContent(w, r, info.Name(), mod, rs)
-}
-
 func fileExists(fsys fs.FS, rel string) bool {
 	fi, err := fs.Stat(fsys, rel)
 	return err == nil && !fi.IsDir()
-}
-
-func isReserved(urlPath string) bool {
-	return urlPath == reservedPrefix || strings.HasPrefix(urlPath, reservedPrefix+"/")
 }
 
 func cleanURLPath(p string) string {

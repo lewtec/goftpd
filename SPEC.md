@@ -19,11 +19,13 @@ Use only the approved term for each idea.
 | URL path with no matching file or directory | miss | 404 fallback, rewrite |
 | HTML table of a directory | listing | index, browse, file manager |
 | `--spa` | SPA mode | host mode, www mode |
-| `/__goftpd__/` | reserved prefix | internal path, magic path |
+| `/__lewkit__/` | asset prefix | reserved prefix, internal path, magic path |
 | `index.html` in a directory | directory index | homepage, entry |
 | `/index.html` at the served directory | site index | root index |
 | `/404.html` at the served directory | site 404 | custom 404, error page |
 | Templ HTML from goftpd | built-in page | internal template, our 404 |
+| `asset.Mount` | asset handler | embed server |
+| `sakuracss.Load` | stylesheet tag | vendored stylesheet |
 | `a-h/templ` generated Go | generated file | compiled template |
 | quoted Unix-nanosecond modification time | strong ETag | weak ETag, content hash |
 | `Range` byte slice | byte range | partial download |
@@ -38,6 +40,8 @@ Use only the approved term for each idea.
 
 ## Request path
 
+An asset URL is answered by the asset handler before these rules.
+
 Use `r.URL.Path`.
 Do not use `r.RequestURI`.
 The query string is not part of the file path.
@@ -49,32 +53,40 @@ Open files through an `fs.FS` for the served directory.
 Honor `GET` and `HEAD`.
 For other methods, return `405`.
 
-## Reserved prefix
+## Asset prefix
 
-Paths `/__goftpd__` and `/__goftpd__/*` never read the served directory.
-They never enter SPA mode.
-They never produce a listing.
+The asset handler serves lewkit assets in front of the file handler.
 
-Map URL to embed files:
+An asset URL is exactly one path segment under `/__lewkit__/`.
+Every such URL belongs to the asset handler, registered or not.
+It never reads the served directory.
+It never enters SPA mode.
+It never produces a listing.
 
-| URL | File in the module |
+| URL | Registered by |
 | --- | --- |
-| `/__goftpd__/sakura.css` | `assets/sakura.css` |
-| `/__goftpd__/sakura-dark.css` | `assets/sakura-dark.css` |
+| `/__lewkit__/sakura.css` | `github.com/lewtec/lewkit/x/http/asset/sakuracss` |
 
-A later change may add `/__goftpd__/icons/*` from `assets/icons/`.
-Do not add icon files in this change.
+GET and HEAD of a registered name serve that file.
+The asset handler sets `Cache-Control: max-age=5` and `Content-Type`.
+Do not apply the strong ETag rules from "Real file" to an asset URL.
 
-If the embed file is missing, return the built-in 404 page with status 404.
-Do not list the embed file system.
+GET or HEAD of an unregistered name in that one segment returns status 404
+with the net/http not-found body.
+Do not render the built-in 404 page for that URL.
 
-Serve an embed file with the same rules as a real file:
-`http.ServeContent`, a strong ETag, `Cache-Control: no-cache`, and byte ranges.
-An embed file has no modification time. Its strong ETag is the server
-binary's modification time, read once at process start. The running
-process keeps that tag until restart.
+Any other method on an asset URL returns status 405 and `Allow: GET, HEAD`.
+Do not use the localized 405 body for that URL.
 
-A directory named `__goftpd__` in the served directory is not reachable.
+A path that is not an asset URL is a normal request.
+That includes `/__lewkit__`, `/__lewkit__/`, and a nested path such as
+`/__lewkit__/docs/readme.txt`.
+A served-directory file whose URL is one segment under `/__lewkit__/`,
+including `/__lewkit__/sakura.css` and `/__lewkit__/notes.txt`, is not reachable.
+The asset handler answers that URL.
+
+Do not embed stylesheets in this module.
+Do not add a `/__goftpd__/` handler. A path under that name is a normal request.
 
 ## Trailing slash
 
@@ -143,13 +155,7 @@ Each crumb is a link.
 The listing is server-rendered HTML from templ.
 The page loads no JavaScript.
 
-Stylesheets:
-
-```html
-<link rel="stylesheet" href="/__goftpd__/sakura.css" media="screen">
-<link rel="stylesheet" href="/__goftpd__/sakura-dark.css" media="screen and (prefers-color-scheme: dark)">
-```
-
+The listing loads the Sakura stylesheet with the stylesheet tag.
 Sakura styles the listing. Do not add an overlay stylesheet.
 
 `index.html` in the directory is a row.
@@ -187,7 +193,7 @@ Do not use `http.ServeContent` for that response.
 Title is the `NotFoundTitle` message.
 Show the requested path.
 Link to `/` with the `NotFoundBack` message.
-Use the same stylesheets as the listing.
+Use the same stylesheet tag as the listing.
 Load no JavaScript.
 
 ## Status codes
@@ -203,13 +209,19 @@ Load no JavaScript.
 | Directory index or site index as SPA miss | 200 |
 | Site 404 | 404 |
 | Built-in 404 page | 404 |
+| Registered asset | 200 |
+| Unregistered asset name | 404 |
+| Asset URL, method not GET or HEAD | 405 |
 | Directory without `/` | 308 |
 | Method not GET or HEAD | 405 |
 
 ## Assets
 
-Vendor sakura.css 1.5.1 and sakura-dark.css 1.5.1 in `assets/`.
-Put the version in a comment at the top of each file.
+The Sakura stylesheet is lewkit `sakuracss` 1.5.1.
+Importing that package registers the file.
+`NewApp` puts the asset handler in front of the file handler.
+
+Do not vendor CSS in this module.
 Do not fetch CSS at run time.
 
 ## Templates

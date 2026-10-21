@@ -161,33 +161,6 @@ func TestByteRangeFromMiddle(t *testing.T) {
 	}
 }
 
-func TestAssetRevalidates(t *testing.T) {
-	app := newTestApp(t, Config{Dir: t.TempDir()})
-	rec := doReq(t, app, http.MethodGet, "/__goftpd__/sakura.css")
-	if rec.Code != http.StatusOK {
-		t.Fatalf("code got %d, want 200", rec.Code)
-	}
-	etag := mtimeETag(executableModTime())
-	if got := rec.Header().Get("ETag"); got != etag {
-		t.Fatalf("ETag got %q, want %q", got, etag)
-	}
-	if got := rec.Header().Get("Cache-Control"); got != "no-cache" {
-		t.Fatalf("Cache-Control got %q, want no-cache", got)
-	}
-	rec = doReqHdr(t, app, http.MethodGet, "/__goftpd__/sakura.css", map[string]string{"If-None-Match": etag})
-	if rec.Code != http.StatusNotModified {
-		t.Fatalf("code got %d, want 304", rec.Code)
-	}
-	if rec.Body.Len() != 0 {
-		t.Fatalf("304 body = %q", rec.Body.String())
-	}
-
-	rec = doReq(t, app, http.MethodGet, "/__goftpd__/sakura-dark.css")
-	if got := rec.Header().Get("ETag"); got != etag {
-		t.Fatalf("dark css ETag got %q, want the binary mtime %q", got, etag)
-	}
-}
-
 func TestSite404IgnoresRange(t *testing.T) {
 	dir := t.TempDir()
 	body := "0123456789site-404"

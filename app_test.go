@@ -10,6 +10,9 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/lewtec/lewkit/x/http/asset"
+	"github.com/lewtec/lewkit/x/http/asset/sakuracss"
 )
 
 func newTestApp(t *testing.T, cfg Config) *App {
@@ -251,23 +254,76 @@ func TestSPAMissChain(t *testing.T) {
 	}
 }
 
-func TestReservedAssets(t *testing.T) {
-	app := newTestApp(t, Config{Dir: t.TempDir(), SPA: true})
+func TestLewkitAssets(t *testing.T) {
+	dir := t.TempDir()
+	nested := filepath.Join(dir, "__lewkit__")
+	if err := os.Mkdir(nested, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(nested, "sakura.css"), []byte("user-sakura"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(nested, "notes.txt"), []byte("user-notes"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	docs := filepath.Join(nested, "docs")
+	if err := os.Mkdir(docs, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(docs, "readme.txt"), []byte("user-nested"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	app := newTestApp(t, Config{Dir: dir})
 
-	rec := doReq(t, app, http.MethodGet, "/__goftpd__/sakura.css")
+	rec := doReq(t, app, http.MethodGet, "/")
+	if rec.Code != http.StatusOK {
+		t.Fatalf("listing code got %d, want %d", rec.Code, http.StatusOK)
+	}
+	if !strings.Contains(rec.Body.String(), sakuracss.Path) {
+		t.Fatalf("listing missing stylesheet tag %s", sakuracss.Path)
+	}
+
+	rec = doReq(t, app, http.MethodGet, sakuracss.Path)
 	if rec.Code != http.StatusOK {
 		t.Fatalf("sakura.css code got %d, want %d", rec.Code, http.StatusOK)
 	}
-	if !strings.Contains(rec.Body.String(), "Sakura.css") {
-		t.Fatalf("sakura.css body unexpected")
+	if strings.Contains(rec.Body.String(), "user-sakura") || !strings.Contains(rec.Body.String(), "Sakura.css") {
+		t.Fatalf("sakura.css served the disk file")
 	}
 	if ct := rec.Header().Get("Content-Type"); !strings.Contains(ct, "text/css") {
 		t.Fatalf("Content-Type got %q", ct)
 	}
+	if got := rec.Header().Get("Cache-Control"); got != "max-age=5" {
+		t.Fatalf("Cache-Control got %q, want max-age=5", got)
+	}
 
-	rec = doReq(t, app, http.MethodGet, "/__goftpd__/missing.css")
+	rec = doReq(t, app, http.MethodGet, asset.Prefix+"missing.css")
 	if rec.Code != http.StatusNotFound {
 		t.Fatalf("missing asset code got %d, want %d", rec.Code, http.StatusNotFound)
+	}
+	if strings.Contains(rec.Body.String(), "<html") {
+		t.Fatalf("missing asset rendered a page: %s", rec.Body.String())
+	}
+
+	rec = doReq(t, app, http.MethodPost, sakuracss.Path)
+	if rec.Code != http.StatusMethodNotAllowed {
+		t.Fatalf("asset POST code got %d, want %d", rec.Code, http.StatusMethodNotAllowed)
+	}
+
+	rec = doReq(t, app, http.MethodGet, asset.Prefix+"notes.txt")
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("unregistered asset code got %d, want %d", rec.Code, http.StatusNotFound)
+	}
+	if strings.Contains(rec.Body.String(), "user-notes") {
+		t.Fatalf("unregistered asset served the disk file")
+	}
+
+	rec = doReq(t, app, http.MethodGet, asset.Prefix+"docs/readme.txt")
+	if rec.Code != http.StatusOK {
+		t.Fatalf("nested file code got %d, want %d", rec.Code, http.StatusOK)
+	}
+	if got := rec.Body.String(); got != "user-nested" {
+		t.Fatalf("nested file body got %q", got)
 	}
 }
 
