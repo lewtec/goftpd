@@ -5,7 +5,7 @@ go 1.27.0
 require (
 	github.com/BurntSushi/toml v1.6.0
 	github.com/a-h/templ v0.3.1020
-	github.com/lewtec/lewkit v0.0.0-20261124190124-d44587ca3404
+	github.com/lewtec/lewkit v0.0.0-20261126183604-afe0a0bb5b5b
 	github.com/nicksnyder/go-i18n/v2 v2.6.1
 	golang.org/x/text v0.42.0
 )
