@@ -6,8 +6,8 @@ require (
 	github.com/BurntSushi/toml v1.6.0
 	github.com/a-h/templ v0.3.1020
 	github.com/lewtec/lewkit v0.0.0-20261124190124-d44587ca3404
-	github.com/nicksnyder/go-i18n/v2 v2.6.1
-	golang.org/x/text v0.42.0
+	github.com/nicksnyder/go-i18n/v2 v2.7.0
+	golang.org/x/text v0.43.0
 )
 
 require (
@@ -31,7 +31,7 @@ require (
 	golang.org/x/sync v0.25.0 // indirect
 	golang.org/x/sys v0.48.0 // indirect
 	golang.org/x/term v0.46.0 // indirect
-	golang.org/x/tools v0.50.0 // indirect
+	golang.org/x/tools v0.51.0 // indirect
 )
 
 tool (
